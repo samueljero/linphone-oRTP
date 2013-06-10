@@ -115,7 +115,16 @@ typedef struct _OrtpNetworkSimulatorCtx{
 
 typedef struct _RtpStream
 {
-	ortp_socket_t socket;
+	ortp_socket_t s_socket;
+	ortp_socket_t r_socket;
+	ortp_socket_t a_socket;
+	bool_t r_connected;
+	bool_t s_connected;
+	bool_t is_dccp;
+	int	dccp_ccid;
+	int dccp_q_len;
+	int dccp_reject_ms;
+	int dccp_bw_update_ms;
 	struct _RtpTransport *tr; 
 	int sockfamily;
 	int max_rq_size;
@@ -156,6 +165,8 @@ typedef struct _RtpStream
 	struct timeval send_bw_start; /* used for bandwidth estimation */
 	unsigned int recv_bytes; /* used for bandwidth estimation */
 	struct timeval recv_bw_start; /* used for bandwidth estimation */
+	struct timeval last_reject; /*used for bandwidth control with DCCP*/
+	struct timeval last_bw_update; /* used for bandwidth control with DCCP CCID 3*/
 	rtp_stats_t stats;
 	int recv_errno;
 	int send_errno;
@@ -298,7 +309,7 @@ ORTP_PUBLIC int rtp_session_set_remote_addr_and_port (RtpSession * session, cons
 ORTP_PUBLIC int rtp_session_set_remote_addr(RtpSession *session,const char *addr, int port);
 /* alternatively to the set_remote_addr() and set_local_addr(), an application can give
 a valid socket (potentially connect()ed )to be used by the RtpSession */
-ORTP_PUBLIC void rtp_session_set_sockets(RtpSession *session, int rtpfd, int rtcpfd);
+ORTP_PUBLIC void rtp_session_set_sockets(RtpSession *session, int rtpfd, int rtcpfd, int is_dccp);
 ORTP_PUBLIC void rtp_session_set_transports(RtpSession *session, RtpTransport *rtptr, RtpTransport *rtcptr);
 
 /*those methods are provided for people who wants to send non-RTP messages using the RTP/RTCP sockets */
@@ -424,6 +435,15 @@ ORTP_PUBLIC void rtp_session_uninit(RtpSession *session);
 ORTP_PUBLIC void rtp_session_dispatch_event(RtpSession *session, OrtpEvent *ev);
 
 ORTP_PUBLIC void rtp_session_set_reuseaddr(RtpSession *session, bool_t yes);
+
+ORTP_PUBLIC void rtp_session_set_use_dccp(RtpSession *session, bool_t yes);
+ORTP_PUBLIC bool_t rtp_session_get_use_dccp(RtpSession *session);
+
+ORTP_PUBLIC void rtp_session_set_dccp_ccid(RtpSession *session, int ccid);
+ORTP_PUBLIC int rtp_session_get_dccp_ccid(RtpSession *session);
+
+ORTP_PUBLIC void rtp_session_set_dccp_queue_len(RtpSession *session, int len);
+ORTP_PUBLIC int rtp_session_get_dccp_queue_len(RtpSession *session);
 
 #ifdef __cplusplus
 }

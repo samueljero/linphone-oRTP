@@ -55,6 +55,7 @@ struct _OrtpEventData{
 		} zrtp_sas;
 		OrtpSocketType socket_type;
 		bool_t ice_processing_successful;
+		int bandwidth;
 	} info;
 };
 
@@ -84,6 +85,8 @@ ORTP_PUBLIC OrtpEventType ortp_event_get_type(const OrtpEvent *ev);
 #define ORTP_EVENT_ICE_GATHERING_FINISHED		10
 #define ORTP_EVENT_ICE_LOSING_PAIRS_COMPLETED		11
 #define ORTP_EVENT_ICE_RESTART_NEEDED			12
+#define ORTP_EVENT_SEND_REJECTED		13 /**<when a DCCP send is rejected with EAGAIN */
+#define ORTP_EVENT_BANDWIDTH			14 /**<DCCP CCID3 can report the amount of bandwidth available*/
 
 ORTP_PUBLIC OrtpEventData * ortp_event_get_data(OrtpEvent *ev);
 ORTP_PUBLIC void ortp_event_destroy(OrtpEvent *ev);

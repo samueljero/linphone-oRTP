@@ -138,8 +138,8 @@ void rtp_session_rtp_parse(RtpSession *session, mblk_t *mp, uint32_t local_str_t
 			if (session->inc_same_ssrc_count>=session->rtp.ssrc_changed_thres){
 
 				/* store the sender rtp address to do symmetric RTP */
-				if (!session->use_connect){
-					if (session->rtp.socket>0 && session->symmetric_rtp){
+				if (!session->rtp.is_dccp && !session->use_connect){
+					if (session->rtp.s_socket>0 && session->symmetric_rtp){
 						/* store the sender rtp address to do symmetric RTP */
 						memcpy(&session->rtp.rem_addr,addr,addrlen);
 						session->rtp.rem_addrlen=addrlen;
@@ -167,8 +167,8 @@ void rtp_session_rtp_parse(RtpSession *session, mblk_t *mp, uint32_t local_str_t
 		session->ssrc_set=TRUE;
 		session->rcv.ssrc=rtp->ssrc;
 
-		if (!session->use_connect){
-			if (session->rtp.socket>0 && session->symmetric_rtp){
+		if (!session->rtp.is_dccp && !session->use_connect){
+			if (session->rtp.s_socket>0 && session->symmetric_rtp){
 				/* store the sender rtp address to do symmetric RTP */
 				memcpy(&session->rtp.rem_addr,addr,addrlen);
 				session->rtp.rem_addrlen=addrlen;

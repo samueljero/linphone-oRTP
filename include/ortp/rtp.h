@@ -71,6 +71,7 @@ typedef struct rtp_stats
 	uint64_t cum_packet_loss; /* cumulative number of packet lost */
 	uint64_t bad;			/* packets that did not appear to be RTP */
 	uint64_t discarded;		/* incoming packets discarded because the queue exceeds its max size */
+	uint64_t rejected;		/* outgoing packets rejected by DCCP*/
 	uint64_t sent_rtcp_packets;	/* sent RTCP packets counter (only packets that embed a report block are considered) */
 } rtp_stats_t;
 
