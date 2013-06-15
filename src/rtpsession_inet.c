@@ -1436,6 +1436,9 @@ rtp_session_rtp_send (RtpSession * session, mblk_t * m)
 		if(errno!=EINTR && errno!=EAGAIN && errno!=EWOULDBLOCK){
 				session->rtp.s_connected=FALSE;
 		}
+		if(session->rtp.is_dccp && (errno==EAGAIN || errno==EWOULDBLOCK) && session->eventqs!=NULL){
+				session->rtp.stats.rejected++;
+		}
 	}else{
 		update_sent_bytes(session,error);
 	}

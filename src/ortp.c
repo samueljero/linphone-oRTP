@@ -175,7 +175,8 @@ void rtp_stats_display(const rtp_stats_t *stats, const char *header) {
 	ortp_log(ORTP_MESSAGE, "lost                          %20"PRId64" packets", stats->cum_packet_loss);
 	ortp_log(ORTP_MESSAGE, "received too late             %20"PRId64" packets", stats->outoftime);        
 	ortp_log(ORTP_MESSAGE, "bad formatted                 %20"PRId64" packets", stats->bad);
-	ortp_log(ORTP_MESSAGE, "discarded (queue overflow)    %20"PRId64" packets", stats->discarded);       
+	ortp_log(ORTP_MESSAGE, "discarded (queue overflow)    %20"PRId64" packets", stats->discarded);
+	ortp_log(ORTP_MESSAGE, "rejected  (DCCP overflow)     %20"PRId64" packets", stats->rejected);
 	ortp_log(ORTP_MESSAGE, "===========================================================");
 }
 
