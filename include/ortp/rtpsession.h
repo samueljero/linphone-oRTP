@@ -122,6 +122,7 @@ typedef struct _RtpStream
 	bool_t s_connected;
 	bool_t is_dccp;
 	int	dccp_ccid;
+	int dccp_q_len;
 	struct _RtpTransport *tr; 
 	int sockfamily;
 	int max_rq_size;
@@ -430,6 +431,9 @@ ORTP_PUBLIC void rtp_session_uninit(RtpSession *session);
 ORTP_PUBLIC void rtp_session_dispatch_event(RtpSession *session, OrtpEvent *ev);
 
 ORTP_PUBLIC void rtp_session_set_reuseaddr(RtpSession *session, bool_t yes);
+
+ORTP_PUBLIC void rtp_session_set_dccp_queue_len(RtpSession *session, int len);
+ORTP_PUBLIC int rtp_session_get_dccp_queue_len(RtpSession *session);
 
 #ifdef __cplusplus
 }

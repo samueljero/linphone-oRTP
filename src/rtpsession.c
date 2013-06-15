@@ -256,6 +256,7 @@ rtp_session_init (RtpSession * session, int mode)
 	session->rtp.s_connected=FALSE;
 	session->rtp.is_dccp=DO_DCCP;
 	session->rtp.dccp_ccid=DCCP_CCID;
+	session->rtp.dccp_q_len=100;
 	session->rtcp.socket=-1;
 #ifndef WIN32
 	session->rtp.snd_socket_size=0;	/*use OS default value unless on windows where they are definitely too short*/
@@ -1872,4 +1873,19 @@ void rtp_session_process (RtpSession * session, uint32_t time, RtpScheduler *sch
 
 void rtp_session_set_reuseaddr(RtpSession *session, bool_t yes) {
 	session->reuseaddr=yes;
+}
+
+void rtp_session_set_dccp_queue_len(RtpSession *session, int len){
+	if(len < 1){
+		len=1;
+	}
+
+	if(session->rtp.is_dccp && len!=session->rtp.dccp_q_len){
+		set_dccp_q_len(session->rtp.s_socket,len);
+	}
+	session->rtp.dccp_q_len=len;
+}
+
+int rtp_session_get_dccp_queue_len(RtpSession *session){
+	return session->rtp.dccp_q_len;
 }

@@ -92,6 +92,24 @@ static bool_t try_connect(int fd, const struct sockaddr *dest, socklen_t addrlen
 	return TRUE;
 }
 
+int set_dccp_q_len(int sock, int len){
+	bool_t done=FALSE;
+#ifdef ORTP_DCCP
+	int err;
+	int val=len;
+	if (len>0){
+		err = setsockopt(sock, SOL_DCCP, DCCP_SOCKOPT_QPOLICY_TXQLEN, (void *)&val, sizeof(val));
+		if (err < 0) {
+			ortp_error("Failed to increase socket's transmission queue: %s.", getSocketError());
+		}else{
+			ortp_message("Setting DCCP queue length to: %i.", len);
+			done=TRUE;
+		}
+	}
+#endif
+	return done;
+}
+
 static ortp_socket_t dccp_accept(int fd){
 	ortp_socket_t nsock=-1;
 #ifdef ORTP_DCCP
@@ -634,6 +652,7 @@ rtp_session_set_local_addr (RtpSession * session, const char * addr, int rtp_por
 			sock1=create_and_bind_dccp_random(addr,&sockfamily,&rtp_port,FALSE,session->rtp.dccp_ccid);
 		}
 		sock2=create_and_bind_dccp_random(addr,&sockfamily,&port,TRUE,session->rtp.dccp_ccid);
+		set_dccp_q_len(sock2, session->rtp.dccp_q_len);
 	}else{
 		if (rtp_port>0)
 			sock1=create_udp_socket(addr,rtp_port,&sockfamily,session->reuseaddr);
