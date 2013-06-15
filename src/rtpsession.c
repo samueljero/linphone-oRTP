@@ -40,6 +40,9 @@
 #endif
 #endif
 
+#define DO_DCCP FALSE
+#define DCCP_CCID 3
+
 extern mblk_t *rtcp_create_simple_bye_packet(uint32_t ssrc, const char *reason);
 extern int rtcp_sr_init(RtpSession *session, char *buf, int size);
 extern int rtcp_rr_init(RtpSession *session, char *buf, int size);
@@ -246,7 +249,13 @@ rtp_session_init (RtpSession * session, int mode)
 	session->snd.telephone_events_pt=-1;	/* not defined a priori */
 	session->rcv.telephone_events_pt=-1;	/* not defined a priori */
 	rtp_session_set_profile (session, &av_profile); /*the default profile to work with */
-	session->rtp.socket=-1;
+	session->rtp.s_socket=-1;
+	session->rtp.r_socket=-1;
+	session->rtp.a_socket=-1;
+	session->rtp.r_connected=FALSE;
+	session->rtp.s_connected=FALSE;
+	session->rtp.is_dccp=DO_DCCP;
+	session->rtp.dccp_ccid=DCCP_CCID;
 	session->rtcp.socket=-1;
 #ifndef WIN32
 	session->rtp.snd_socket_size=0;	/*use OS default value unless on windows where they are definitely too short*/
@@ -1351,9 +1360,13 @@ void rtp_session_set_time_jump_limit(RtpSession *session, int milisecs){
  * Closes the rtp and rtcp sockets.
 **/
 void rtp_session_release_sockets(RtpSession *session){
-	if (session->rtp.socket!=(ortp_socket_t)-1) close_socket (session->rtp.socket);
+	if (session->rtp.s_socket!=(ortp_socket_t)-1) close_socket (session->rtp.s_socket);
+	session->rtp.s_socket=-1;
+	if (session->rtp.r_socket!=(ortp_socket_t)-1) close_socket (session->rtp.r_socket);
+	session->rtp.r_socket=-1;
+	if (session->rtp.a_socket!=(ortp_socket_t)-1) close_socket (session->rtp.a_socket);
+	session->rtp.a_socket=-1;
 	if (session->rtcp.socket!=(ortp_socket_t)-1) close_socket (session->rtcp.socket);
-	session->rtp.socket=-1;
 	session->rtcp.socket=-1;
 
 	if (session->rtp.tr && session->rtp.tr->t_close)
@@ -1371,7 +1384,7 @@ void rtp_session_release_sockets(RtpSession *session){
 }
 
 ortp_socket_t rtp_session_get_rtp_socket(const RtpSession *session){
-	return rtp_session_using_transport(session, rtp) ? (session->rtp.tr->t_getsocket)(session->rtp.tr) : session->rtp.socket;
+	return rtp_session_using_transport(session, rtp) ? (session->rtp.tr->t_getsocket)(session->rtp.tr) : session->rtp.s_socket;
 }
 
 ortp_socket_t rtp_session_get_rtcp_socket(const RtpSession *session){
