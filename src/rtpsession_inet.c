@@ -29,6 +29,7 @@
 #include "utils.h"
 #include "ortp/rtpsession.h"
 #include "rtpsession_priv.h"
+#include "ortp/event.h"
 
 #if (_WIN32_WINNT >= 0x0600)
 #include <delayimp.h>
@@ -82,6 +83,29 @@ static LPFN_WSARECVMSG ortp_WSARecvMsg = NULL;
 
 #ifdef ORTP_DCCP
 #include <linux/dccp.h>
+/** 	tfrc_tx_info    -    TFRC Sender Data Structure
+ *
+ * 	@tfrctx_x:	computed transmit rate (4.3 (4))
+ * 	@tfrctx_x_recv: receiver estimate of send rate (4.3)
+ * 	@tfrctx_x_calc:	return value of throughput equation (3.1)
+ * 	@tfrctx_rtt:	(moving average) estimate of RTT (4.3)
+ * 	@tfrctx_p:	current loss event rate (5.4)
+ * 	@tfrctx_rto:	estimate of RTO, equals 4*RTT (4.3)
+ * 	@tfrctx_ipi:	inter-packet interval (4.6)
+ *
+ *  Note: X and X_recv are both maintained in units of 64 * bytes/second. This
+ *        enables a finer resolution of sending rates and avoids problems with
+ *        integer arithmetic; u32 is not sufficient as scaling consumes 6 bits.
+ */
+struct tfrc_tx_info {
+	__u64 tfrctx_x;
+	__u64 tfrctx_x_recv;
+	__u32 tfrctx_x_calc;
+	__u32 tfrctx_rtt;
+	__u32 tfrctx_p;
+	__u32 tfrctx_rto;
+	__u32 tfrctx_ipi;
+};
 #endif
 
 static bool_t try_connect(int fd, const struct sockaddr *dest, socklen_t addrlen){
@@ -1457,9 +1481,46 @@ rtp_session_rtp_send (RtpSession * session, mblk_t * m)
 		}
 		if(session->rtp.is_dccp && (errno==EAGAIN || errno==EWOULDBLOCK) && session->eventqs!=NULL){
 				session->rtp.stats.rejected++;
+				OrtpEvent *ev;
+				OrtpEventData *evd;
+				struct timeval tm;
+				long msec;
+				gettimeofday(&tm,NULL);
+				msec=(tm.tv_sec- session->rtp.last_reject.tv_sec)*1000;
+				msec+=(tm.tv_usec- session->rtp.last_reject.tv_usec)/1000;
+				if(msec > session->rtp.dccp_reject_ms){
+					gettimeofday(&session->rtp.last_reject,NULL);
+					ev=ortp_event_new(ORTP_EVENT_SEND_REJECTED);
+					evd=ortp_event_get_data(ev);
+					evd->packet=dupmsg(m);
+					rtp_session_dispatch_event(session,ev);
+				}
 		}
 	}else{
 		update_sent_bytes(session,error);
+#ifdef ORTP_DCCP
+		if(session->rtp.is_dccp && session->rtp.dccp_ccid==3){
+			struct timeval tm;
+			long msec;
+			gettimeofday(&tm,NULL);
+			msec=(tm.tv_sec- session->rtp.last_bw_update.tv_sec)*1000;
+			msec+=(tm.tv_usec- session->rtp.last_bw_update.tv_usec)/1000;
+			if(msec >= session->rtp.dccp_bw_update_ms){
+				gettimeofday(&session->rtp.last_bw_update,NULL);
+				gettimeofday(&session->rtp.last_reject,NULL);
+				struct tfrc_tx_info ifo;
+				socklen_t len=sizeof(ifo);
+				if(getsockopt(session->rtp.s_socket,SOL_DCCP,DCCP_SOCKOPT_CCID_TX_INFO,&ifo,&len)>=0){
+					OrtpEvent *ev;
+					OrtpEventData *evd;
+					ev=ortp_event_new(ORTP_EVENT_BANDWIDTH);
+					evd=ortp_event_get_data(ev);
+					evd->info.bandwidth=(ifo.tfrctx_x>>6)*8;
+					rtp_session_dispatch_event(session,ev);
+				}
+			}
+		}
+#endif
 	}
 	freemsg (m);
 	return error;
@@ -1745,6 +1806,17 @@ static void compute_rtt(RtpSession *session, const struct timeval *now, const re
 		}
 		session->rtt=rtt_frac;
 		/*ortp_message("rtt estimated to %f ms",session->rtt);*/
+		if(rtt_frac*1000 < MIN_DCCP_ADJUSTMENT_INTERVAL_MS){
+			session->rtp.dccp_reject_ms=MIN_DCCP_ADJUSTMENT_INTERVAL_MS;
+			session->rtp.dccp_bw_update_ms=MIN_DCCP_ADJUSTMENT_INTERVAL_MS;
+		}else{
+			if(session->rtp.dccp_ccid==2){
+				session->rtp.dccp_reject_ms=rtt_frac*1000*CCID2_UPDATE_FACTOR;
+			}else if(session->rtp.dccp_ccid==3){
+				session->rtp.dccp_reject_ms=rtt_frac*1000*CCID3_UPDATE_FACTOR;
+				session->rtp.dccp_bw_update_ms=rtt_frac*1000*CCID3_UPDATE_FACTOR;
+			}
+		}
 	}
 }
 

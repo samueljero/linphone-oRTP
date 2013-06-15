@@ -123,6 +123,8 @@ typedef struct _RtpStream
 	bool_t is_dccp;
 	int	dccp_ccid;
 	int dccp_q_len;
+	int dccp_reject_ms;
+	int dccp_bw_update_ms;
 	struct _RtpTransport *tr; 
 	int sockfamily;
 	int max_rq_size;
@@ -163,6 +165,8 @@ typedef struct _RtpStream
 	struct timeval send_bw_start; /* used for bandwidth estimation */
 	unsigned int recv_bytes; /* used for bandwidth estimation */
 	struct timeval recv_bw_start; /* used for bandwidth estimation */
+	struct timeval last_reject; /*used for bandwidth control with DCCP*/
+	struct timeval last_bw_update; /* used for bandwidth control with DCCP CCID 3*/
 	rtp_stats_t stats;
 	int recv_errno;
 	int send_errno;

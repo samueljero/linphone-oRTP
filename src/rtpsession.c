@@ -42,6 +42,7 @@
 
 #define DO_DCCP FALSE
 #define DCCP_CCID 3
+#define MIN_DCCP_ADJUSTMENT_INTERVAL_MS 40
 
 extern mblk_t *rtcp_create_simple_bye_packet(uint32_t ssrc, const char *reason);
 extern int rtcp_sr_init(RtpSession *session, char *buf, int size);
@@ -257,6 +258,12 @@ rtp_session_init (RtpSession * session, int mode)
 	session->rtp.is_dccp=DO_DCCP;
 	session->rtp.dccp_ccid=DCCP_CCID;
 	session->rtp.dccp_q_len=100;
+	session->rtp.dccp_reject_ms=MIN_DCCP_ADJUSTMENT_INTERVAL_MS;
+	session->rtp.dccp_bw_update_ms=MIN_DCCP_ADJUSTMENT_INTERVAL_MS;
+	session->rtp.last_reject.tv_sec=0;
+	session->rtp.last_reject.tv_usec=0;
+	session->rtp.last_bw_update.tv_sec=0;
+	session->rtp.last_bw_update.tv_usec=0;
 	session->rtcp.socket=-1;
 #ifndef WIN32
 	session->rtp.snd_socket_size=0;	/*use OS default value unless on windows where they are definitely too short*/
