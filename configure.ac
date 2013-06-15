@@ -86,6 +86,18 @@ if test x$ntptimestamp = xtrue ; then
 	ORTP_DEFS="$ORTP_DEFS -DORTP_TIMESTAMP"
 fi
 
+dnl enable DCCP support
+AC_ARG_ENABLE(dccp,
+      [AS_HELP_STRING([--enable-dccp], [Enable DCCP support. Requires Linux >3.2.0 (default=no)])],
+      [case "${enableval}" in
+        yes)  dccp=true;;
+        no)   dccp=false;;
+        *) AC_MSG_ERROR(bad value ${enableval} for --enable-dccp) ;;
+      esac],[dccp=false])
+if test x$dccp = xtrue ; then
+	ORTP_DEFS="$ORTP_DEFS -DORTP_DCCP"
+fi
+
 AC_ARG_ENABLE(mode64bit,
 	[AS_HELP_STRING([--enable-mode64bit], [Produce a 64-bit library (default=no)])],
 	[case "${enableval}" in
