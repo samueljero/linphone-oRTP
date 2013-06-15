@@ -432,6 +432,12 @@ ORTP_PUBLIC void rtp_session_dispatch_event(RtpSession *session, OrtpEvent *ev);
 
 ORTP_PUBLIC void rtp_session_set_reuseaddr(RtpSession *session, bool_t yes);
 
+ORTP_PUBLIC void rtp_session_set_use_dccp(RtpSession *session, bool_t yes);
+ORTP_PUBLIC bool_t rtp_session_get_use_dccp(RtpSession *session);
+
+ORTP_PUBLIC void rtp_session_set_dccp_ccid(RtpSession *session, int ccid);
+ORTP_PUBLIC int rtp_session_get_dccp_ccid(RtpSession *session);
+
 ORTP_PUBLIC void rtp_session_set_dccp_queue_len(RtpSession *session, int len);
 ORTP_PUBLIC int rtp_session_get_dccp_queue_len(RtpSession *session);
 

@@ -1875,6 +1875,23 @@ void rtp_session_set_reuseaddr(RtpSession *session, bool_t yes) {
 	session->reuseaddr=yes;
 }
 
+void rtp_session_set_use_dccp(RtpSession *session, bool_t yes){
+	if(session->rtp.a_socket<0){
+		session->rtp.is_dccp=yes;
+	}
+}
+
+bool_t rtp_session_get_use_dccp(RtpSession *session){
+	return session->rtp.is_dccp;
+}
+void rtp_session_set_dccp_ccid(RtpSession *session, int ccid){
+	session->rtp.dccp_ccid=ccid;
+}
+
+int rtp_session_get_dccp_ccid(RtpSession *session){
+	return session->rtp.dccp_ccid;
+}
+
 void rtp_session_set_dccp_queue_len(RtpSession *session, int len){
 	if(len < 1){
 		len=1;
